@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+import re
 
 # Target URL
 url = 'http://quotes.toscrape.com'
@@ -12,5 +13,12 @@ soup = BeautifulSoup(response.text, 'html.parser')
 
 # Extract data
 quotes = soup.find_all('span', class_='text')
-for quote in quotes:
-    print(quote.text)
+
+
+substr = '<span class="text" itemprop="text">�'
+with open('readme.txt', 'w') as f:
+    for quote in quotes:
+        stripped_front = str(quote)[36:]
+        stripped_back = stripped_front[:-8]
+        f.write(stripped_back)
+        f.write('\n')
