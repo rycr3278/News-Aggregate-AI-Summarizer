@@ -1,57 +1,66 @@
 import requests
 from bs4 import BeautifulSoup
+import re
+import datetime
 
-# Base URL of the site to crawl
-base_url = 'https://www.cnn.com'
+today = datetime.date.today()
+date = today.strftime("%m/%d/%y").replace('/', '')
 
-# Specific section to scrape
-section_url = '/business/tech'
+def crawlCNN(date):
+    
+	# Base URL of the site to crawl
+	base_url = 'https://www.cnn.com'
 
-# Send GET request
-response = requests.get(base_url + section_url)
+	# Specific section to scrape
+	section_url = '/business/tech'
 
-# Parse HTML content
-soup = BeautifulSoup(response.content, 'html.parser')
+	# Send GET request
+	response = requests.get(base_url + section_url)
 
-# Find all article elements
-articles = soup.find_all('span', class_='container__headline-text')
+	# Parse HTML content
+	soup = BeautifulSoup(response.content, 'html.parser')
 
-# Write to file with UTF-8 encoding
-with open('readme.txt', 'w', encoding='utf-8') as f:
-    for article_span in articles:
-        headline = article_span.get_text(strip=True)
+	# Find all article elements
+	articles = soup.find_all('span', class_='container__headline-text')
 
-        # Find the parent <a> tag of the <span> tag
-        link_tag = article_span.find_parent('a', href=True)
+	# Write to file with UTF-8 encoding
+	with open('CNN Tech_' + date + '.txt', 'w', encoding='utf-8') as f:
+		for article_span in articles:
+			headline = article_span.get_text(strip=True)
 
-        if link_tag:
-            link = link_tag['href']
-            full_link = base_url + link if link.startswith('/') else link
+			# Find the parent <a> tag of the <span> tag
+			link_tag = article_span.find_parent('a', href=True)
 
-            # Request the article page
-            article_response = requests.get(full_link)
-            article_soup = BeautifulSoup(article_response.content, 'html.parser')
+			if link_tag:
+				link = link_tag['href']
+				full_link = base_url + link if link.startswith('/') else link
 
-            # Extract date, author, and content (selectors need to be adjusted)
-            date_element = article_soup.find('div', class_='timestamp')
-            author_element = article_soup.find('span', class_='byline__name')
-            content_elements = article_soup.find_all('p')
+				# Request the article page
+				article_response = requests.get(full_link)
+				article_soup = BeautifulSoup(article_response.content, 'html.parser')
 
-            date = date_element.get_text(strip=True) if date_element else 'No date'
-            author = author_element.get_text(strip=True) if author_element else 'No author'
-            content = ' '.join([p.get_text(strip=True) for p in content_elements])
+				# Extract date, author, and content (selectors need to be adjusted)
+				date_element = article_soup.find('div', class_='timestamp')
+				author_element = article_soup.find('span', class_='byline__name')
+				content_elements = article_soup.find_all('p')
 
-            f.write(headline)
-            f.write('\n')
-            f.write(full_link)
-            f.write('\n')
-            f.write(date)
-            f.write('\n')
-            f.write(author)
-            f.write('\n')
-            f.write(content)
-            f.write('\n\n')
-        else:
-            # Write only the headline if no link is found
-            f.write(headline)
-            f.write('\n\n')
+				date = date_element.get_text(strip=True) if date_element else 'No date'
+				author = author_element.get_text(strip=True) if author_element else 'No author'
+				content = ' '.join([p.get_text(strip=True) for p in content_elements])
+
+				f.write(headline)
+				f.write('\n')
+				f.write(full_link)
+				f.write('\n')
+				f.write(date)
+				f.write('\n')
+				f.write(author)
+				f.write('\n')
+				f.write(content)
+				f.write('\n\n')
+			else:
+				# Write only the headline if no link is found
+				f.write(headline)
+				f.write('\n\n')
+
+crawlCNN(date)
