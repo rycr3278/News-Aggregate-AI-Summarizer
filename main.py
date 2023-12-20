@@ -1,5 +1,7 @@
 from crawlers import *
 
-#crawlCNN(date)
+destination = ''
+
+crawlCNN(date)
 crawlMITReview(date)
-#crawlNewAtlas(date)
+crawlNewAtlas(date)

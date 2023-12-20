@@ -2,16 +2,36 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import datetime
+import os
+from pathlib import Path
+
+# This will automatically find the path to the Documents folder
+base_directory = Path.home() / "Documents"
+
+
+
+# Folders for each crawling function
+CNNTech = "CNN_Tech_Articles"
+MITReview = "MIT_Review"
+NewAtlas = "New_Atlas"
 
 today = datetime.date.today()
 date = today.strftime("%m/%d/%y").replace('/', '')
 
+# Full paths for each folder
+CNN_directory_path = base_directory / "NewsScrapes" / CNNTech
+MIT_directory_path = base_directory / "NewsScrapes" / MITReview
+NewAtlas_directory_path = base_directory / "NewsScrapes" / NewAtlas
+
+# Create the directories if they do not exist
+for path in [CNN_directory_path, MIT_directory_path, NewAtlas_directory_path]:
+	if not os.path.exists(path):
+		os.makedirs(path)
+
 def crawlCNN(date):
 	
-	# Base URL of the site to crawl
 	base_url = 'https://www.cnn.com'
 
-	# Specific section to scrape
 	section_url = '/business/tech'
 
 	# Send GET request
@@ -23,8 +43,11 @@ def crawlCNN(date):
 	# Find all article elements
 	articles = soup.find_all('span', class_='container__headline-text')
 
+	 # Full path for the CNN file
+	file_path = os.path.join(CNN_directory_path, 'CNN Tech_' + date + '.txt')
+
 	# Write to file with UTF-8 encoding
-	with open('CNN Tech_' + date + '.txt', 'w', encoding='utf-8') as f:
+	with open(file_path, 'w', encoding='utf-8') as f:
 		for article_span in articles:
 			headline = article_span.get_text(strip=True)
 
@@ -77,8 +100,11 @@ def crawlMITReview(date):
 	# Find all article elements
 	articles = soup.find_all('h3', class_='homepageStoryCard__hed--92c78a74bbc694463e43e32aafbbdfd7')
 
+	# Full path for the CNN file
+	file_path = os.path.join(MIT_directory_path, 'MIT Review_' + date + '.txt')
+
 	# Write to file with UTF-8 encoding
-	with open('MIT Review_' + date + '.txt', 'w', encoding='utf-8') as f:
+	with open(file_path, 'w', encoding='utf-8') as f:
 		for article_span in articles:
 			headline = article_span.get_text(strip=True)
 
@@ -131,8 +157,11 @@ def crawlNewAtlas(date):
 
 	processed_links = []
 	
+	# Full path for the CNN file
+	file_path = os.path.join(NewAtlas_directory_path, 'New Atlas_' + date + '.txt')
+ 
 	# Write to file with UTF-8 encoding
-	with open('New Atlas_' + date + '.txt', 'w', encoding='utf-8') as f:
+	with open(file_path, 'w', encoding='utf-8') as f:
 		for article in articles:
 			# Extract the href attribute
 			link = article.get('href')
