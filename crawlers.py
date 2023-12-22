@@ -4,6 +4,7 @@ import re
 import datetime
 import os
 from pathlib import Path
+import csv
 
 # This will automatically find the path to the Documents folder
 base_directory = Path.home() / "Documents"
@@ -14,6 +15,8 @@ base_directory = Path.home() / "Documents"
 CNNTech = "CNN_Tech_Articles"
 MITReview = "MIT_Review"
 NewAtlas = "New_Atlas"
+TheVerge = "The_Verge"
+
 
 today = datetime.date.today()
 date = today.strftime("%m/%d/%y").replace('/', '')
@@ -22,147 +25,117 @@ date = today.strftime("%m/%d/%y").replace('/', '')
 CNN_directory_path = base_directory / "NewsScrapes" / CNNTech
 MIT_directory_path = base_directory / "NewsScrapes" / MITReview
 NewAtlas_directory_path = base_directory / "NewsScrapes" / NewAtlas
+TheVerge_directory_path = base_directory / "NewsScrapes" / TheVerge
 
 # Create the directories if they do not exist
-for path in [CNN_directory_path, MIT_directory_path, NewAtlas_directory_path]:
+for path in [CNN_directory_path, MIT_directory_path, NewAtlas_directory_path, TheVerge_directory_path]:
 	if not os.path.exists(path):
 		os.makedirs(path)
 
+def get_request(base_url, section_url, article_tag, identifier):
+	# Send GET request
+	response = requests.get(base_url + section_url)
+	# Parse HTML content
+	soup = BeautifulSoup(response.content, 'html.parser')
+	# Find all article elements
+	articles = soup.find_all(article_tag, class_ = identifier)
+
+	return articles
+
+def get_article_data(article_span, base_url, date_tag, date_identifier, author_tag, author_identifier, content_identifier):
+	headline = article_span.get_text(strip=True)
+	article_data = []
+
+	# Find the parent <a> tag of the <span> tag
+	link_tag = article_span.find_parent('a', href=True)
+
+	if link_tag:
+		link = link_tag['href']
+		full_link = base_url + link if link.startswith('/') else link
+
+		# Request the article page
+		article_response = requests.get(full_link)
+		article_soup = BeautifulSoup(article_response.content, 'html.parser')
+
+		# Extract date, author, and content (selectors need to be adjusted)
+		date_element = article_soup.find(date_tag, class_=date_identifier)
+		author_element = article_soup.find(author_tag, class_=author_identifier)
+		content_elements = article_soup.find_all(content_identifier)
+
+		date = date_element.get_text(strip=True) if date_element else 'No date'
+		author = author_element.get_text(strip=True) if author_element else 'No author'
+		content = ' '.join([p.get_text(strip=True) for p in content_elements])
+
+		article_data.append(str(headline))
+		article_data.append(str(full_link))
+		article_data.append(str(date))
+		article_data.append(str(author))
+		article_data.append(str(content))
+		
+	else:
+		# Write only the headline if no link is found
+		article_data.append(str(headline))
+	
+	return article_data
+	
 def crawlCNN(date):
 	
 	base_url = 'https://www.cnn.com'
-
 	section_url = '/business/tech'
 
-	# Send GET request
-	response = requests.get(base_url + section_url)
-
-	# Parse HTML content
-	soup = BeautifulSoup(response.content, 'html.parser')
-
-	# Find all article elements
-	articles = soup.find_all('span', class_='container__headline-text')
+	articles = get_request(base_url, section_url, 'span', 'container__headline-text')
 
 	 # Full path for the CNN file
-	file_path = os.path.join(CNN_directory_path, 'CNN Tech_' + date + '.txt')
+	file_path = os.path.join(CNN_directory_path, 'CNN Tech_' + date + '.csv')
 
-	# Write to file with UTF-8 encoding
-	with open(file_path, 'w', encoding='utf-8') as f:
+	# Write to csv file with UTF-8 encoding
+	with open(file_path, 'w', encoding='utf-8') as csvfile:
+		csvwriter = csv.writer(csvfile)
+		fields = ['Headline', 'Full Link', 'Date', 'Author', 'Content']
+		csvwriter.writerow(fields)
+  
 		for article_span in articles:
-			headline = article_span.get_text(strip=True)
-
-			# Find the parent <a> tag of the <span> tag
-			link_tag = article_span.find_parent('a', href=True)
-
-			if link_tag:
-				link = link_tag['href']
-				full_link = base_url + link if link.startswith('/') else link
-
-				# Request the article page
-				article_response = requests.get(full_link)
-				article_soup = BeautifulSoup(article_response.content, 'html.parser')
-
-				# Extract date, author, and content (selectors need to be adjusted)
-				date_element = article_soup.find('div', class_='timestamp')
-				author_element = article_soup.find('span', class_='byline__name')
-				content_elements = article_soup.find_all('p')
-
-				date = date_element.get_text(strip=True) if date_element else 'No date'
-				author = author_element.get_text(strip=True) if author_element else 'No author'
-				content = ' '.join([p.get_text(strip=True) for p in content_elements])
-
-				f.write(headline)
-				f.write('\n')
-				f.write(full_link)
-				f.write('\n')
-				f.write(date)
-				f.write('\n')
-				f.write(author)
-				f.write('\n')
-				f.write(content)
-				f.write('\n\n')
-			else:
-				# Write only the headline if no link is found
-				f.write(headline)
-				f.write('\n\n')
+			csvwriter.writerow(get_article_data(article_span, base_url, 'div', 'timestamp', 'span', 'byline__name', 'p'))
 
 def crawlMITReview(date):
-	
-	# Base URL of the site to crawl
+
 	base_url = 'https://www.technologyreview.com'
+	section_url = ''
 
-		# Send GET request
-	response = requests.get(base_url)
+	articles = get_request(base_url, section_url, 'h3', 'homepageStoryCard__hed--92c78a74bbc694463e43e32aafbbdfd7')
 
-	# Parse HTML content
-	soup = BeautifulSoup(response.content, 'html.parser')
-
-	# Find all article elements
-	articles = soup.find_all('h3', class_='homepageStoryCard__hed--92c78a74bbc694463e43e32aafbbdfd7')
-
-	# Full path for the CNN file
-	file_path = os.path.join(MIT_directory_path, 'MIT Review_' + date + '.txt')
-
-	# Write to file with UTF-8 encoding
-	with open(file_path, 'w', encoding='utf-8') as f:
-		for article_span in articles:
-			headline = article_span.get_text(strip=True)
-
-			# Find the parent <a> tag of the <span> tag
-			link_tag = article_span.find_parent('a', href=True)
-
-			if link_tag:
-				link = link_tag['href']
-				full_link = base_url + link if link.startswith('/') else link
-
-				# Request the article page
-				article_response = requests.get(full_link)
-				article_soup = BeautifulSoup(article_response.content, 'html.parser')
-
-				# Extract date, author, and content (selectors need to be adjusted)
-				date_element = article_soup.find('div', class_="contentArticleHeader__publishDate--7eebb1699e639d6cdf75ced975c26010")
-				author_element = article_soup.find('a', class_="byline__name--0f13a06758d50e60b13981eba38e67b0 byline__storyPage--0ea6f2bef44ac9c70f6581d3d7f21b41")
-				content_elements = article_soup.find_all('p')
-
-				date = date_element.get_text(strip=True) if date_element else 'No date'
-				author = author_element.get_text(strip=True) if author_element else 'No author'
-				content = ' '.join([p.get_text(strip=True) for p in content_elements])
-
-				f.write(headline)
-				f.write('\n')
-				f.write(full_link)
-				f.write('\n')
-				f.write(date)
-				f.write('\n')
-				f.write(author[:-12])
-				f.write('\n')
-				f.write(content[:-472])
-				f.write('\n\n')
-			else:
-				# Write only the headline if no link is found
-				f.write(headline)
-				f.write('\n\n')
-
+	# Full path for the MIT Review file
+	file_path = os.path.join(MIT_directory_path, 'MIT Review_' + date + '.csv')
+	
+ 	# Write to csv file with UTF-8 encoding
+	with open(file_path, 'w', encoding='utf-8') as csvfile:
+		csvwriter = csv.writer(csvfile)
+		fields = ['Headline', 'Full Link', 'Date', 'Author', 'Content']
+		csvwriter.writerow(fields)
+  
+		for article_span in articles:				
+			csvwriter.writerow(get_article_data(article_span, base_url, 'div', "contentArticleHeader__publishDate--7eebb1699e639d6cdf75ced975c26010", 'a', "byline__name--0f13a06758d50e60b13981eba38e67b0 byline__storyPage--0ea6f2bef44ac9c70f6581d3d7f21b41", 'p'))
+				
 def crawlNewAtlas(date):
 	base_url = 'https://www.newatlas.com'
-
-	# Send GET request
-	response = requests.get(base_url)
-
-	# Parse HTML content
-	soup = BeautifulSoup(response.content, 'html.parser')
-
-	# Find all article elements
-	articles = soup.find_all('a', class_='Link')
-
+	section_url = ''
+	
+	articles = get_request(base_url, section_url, 'a', 'Link')
+ 
 	processed_links = []
 	
 	# Full path for the CNN file
-	file_path = os.path.join(NewAtlas_directory_path, 'New Atlas_' + date + '.txt')
+	file_path = os.path.join(NewAtlas_directory_path, 'New Atlas_' + date + '.csv')
  
 	# Write to file with UTF-8 encoding
-	with open(file_path, 'w', encoding='utf-8') as f:
+	with open(file_path, 'w', encoding='utf-8') as csvfile:
+		csvwriter = csv.writer(csvfile)
+		fields = ['Headline', 'Full Link', 'Date', 'Author', 'Content']
+		csvwriter.writerow(fields)
+  
 		for article in articles:
+			article_data = []
+   
 			# Extract the href attribute
 			link = article.get('href')
 			if link:
@@ -213,23 +186,84 @@ def crawlNewAtlas(date):
 
 						if headline != 'No headline found':
 							
-							# Write to file
-							f.write(headline)
-							f.write('\n')
-							f.write(full_link)
-							f.write('\n')
-							f.write(date)
-							f.write('\n')
-							f.write(author)
-							f.write('\n')
-							f.write(content)
-							f.write('\n\n')
-							processed_links.append(full_link)
+							article_data.append(str(headline))
+							article_data.append(str(full_link))
+							article_data.append(str(date))
+							article_data.append(str(author))
+							article_data.append(str(content))
 							
-
+						else:
+							# Write only the headline if no link is found
+							article_data.append(str(headline))
+							
+						csvwriter.writerow(article_data)
+							
+	
 					except requests.exceptions.RequestException as e:
 						print(f"Error requesting {full_link}: {e}")
 
+def crawlTheVerge(date):
+	
+	base_url = 'https://www.theverge.com'
+	section_url = '/tech'
 
+	# Find all article elements
+	class1_articles = get_request(base_url, section_url, 'a', 'after:absolute after:inset-0 group-hover:shadow-highlight-franklin dark:group-hover:shadow-highlight-blurple')
+	class2_articles = get_request(base_url, section_url, 'a', 'after:absolute after:inset-0 group-hover:shadow-underline-blurple dark:group-hover:shadow-underline-franklin')
+	articles = class1_articles + class2_articles
 
+	# Full path for the NYT file
+	file_path = os.path.join(TheVerge_directory_path, 'TheVerge_' + date + '.csv')
+
+	# Write to csv file with UTF-8 encoding
+	with open(file_path, 'w', encoding='utf-8') as csvfile:
+		csvwriter = csv.writer(csvfile)
+		fields = ['Headline', 'Full Link', 'Date', 'Author', 'Content']
+		csvwriter.writerow(fields)
+  
+		for article_span in articles:
+			headline = article_span.get_text(strip=True)
+			article_data = []
+
+			# Extract the href attribute directly from the <a> tag
+			link = article_span.get('href')
+
+			if link:
+				
+				full_link = base_url + link if link.startswith('/') else link
+
+				# Request the article page
+				article_response = requests.get(full_link)
+				article_soup = BeautifulSoup(article_response.content, 'html.parser')
+
+				# Extract date, author, and content (selectors need to be adjusted)
+				date_element = article_soup.find('time', class_='duet--article--timestamp font-polysans text-12')
+				author_element = article_soup.find('span', class_='font-medium')
+				content_elements = article_soup.find_all('p')
+
+				date = date_element.get_text(strip=True) if date_element else 'No date'
+				author_element = article_soup.find('a', class_='hover:shadow-underline-inherit')
+				if author_element:
+					author_text = author_element.get_text().strip()
+					# Check if the text starts with "By"
+					if author_text.startswith("By"):
+						author_text = author_text[2:]  # Remove "By"
+						author = author_text.split(',')[0].strip()
+					else:
+						author = author_text.split(',')[0].strip()
+				else:
+					author = 'No author'
+				content = ' '.join([p.get_text(strip=True) for p in content_elements])
+
+				article_data.append(str(headline))
+				article_data.append(str(full_link))
+				article_data.append(str(date))
+				article_data.append(str(author))
+				article_data.append(str(content))
+				
+			else:
+				# Write only the headline if no link is found
+				article_data.append(str(headline))
+				
+			csvwriter.writerow(article_data)
 
