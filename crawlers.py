@@ -5,6 +5,8 @@ import datetime
 import os
 from pathlib import Path
 import csv
+from newsplease import NewsPlease
+import json
 
 # This will automatically find the path to the Documents folder
 base_directory = Path.home() / "Documents"
@@ -13,9 +15,10 @@ base_directory = Path.home() / "Documents"
 
 # Folders for each crawling function
 CNNTech = "CNN_Tech_Articles"
-MITReview = "MIT_Review"
+WSJ = "WSJ"
 NewAtlas = "New_Atlas"
 TheVerge = "The_Verge"
+TechCrunch = "TechCrunch"
 
 
 today = datetime.date.today()
@@ -23,12 +26,13 @@ date = today.strftime("%m/%d/%y").replace('/', '')
 
 # Full paths for each folder
 CNN_directory_path = base_directory / "NewsScrapes" / CNNTech
-MIT_directory_path = base_directory / "NewsScrapes" / MITReview
+WSJ_directory_path = base_directory / "NewsScrapes" / WSJ
 NewAtlas_directory_path = base_directory / "NewsScrapes" / NewAtlas
 TheVerge_directory_path = base_directory / "NewsScrapes" / TheVerge
+TechCrunch_directory_path = base_directory / "NewsScrapes" / TechCrunch
 
 # Create the directories if they do not exist
-for path in [CNN_directory_path, MIT_directory_path, NewAtlas_directory_path, TheVerge_directory_path]:
+for path in [CNN_directory_path, WSJ_directory_path, NewAtlas_directory_path, TheVerge_directory_path, TechCrunch_directory_path]:
 	if not os.path.exists(path):
 		os.makedirs(path)
 
@@ -85,122 +89,60 @@ def crawlCNN(date):
 
 	articles = get_request(base_url, section_url, 'span', 'container__headline-text')
 
-	 # Full path for the CNN file
-	file_path = os.path.join(CNN_directory_path, 'CNN Tech_' + date + '.csv')
+	all_articles_data = []
 
-	# Write to csv file with UTF-8 encoding
-	with open(file_path, 'w', encoding='utf-8') as csvfile:
-		csvwriter = csv.writer(csvfile)
-		fields = ['Headline', 'Full Link', 'Date', 'Author', 'Content']
-		csvwriter.writerow(fields)
-  
-		for article_span in articles:
-			csvwriter.writerow(get_article_data(article_span, base_url, 'div', 'timestamp', 'span', 'byline__name', 'p'))
+	for article in articles:
+		# Find the parent <a> tag of the <span> tag
+		link_tag = article.find_parent('a', href=True)
 
-def crawlMITReview(date):
+		if link_tag:
+			link = link_tag['href']
+			full_link = base_url + link if link.startswith('/') else link
+    
+		story = NewsPlease.from_url(full_link)
 
-	base_url = 'https://www.technologyreview.com'
-	section_url = ''
+		article_data = {
+			'title': story.title,
+			'url': story.url,
+			'date_publish': story.date_publish.isoformat() if story.date_publish else None,
+			'authors': story.authors,
+			'maintext': story.maintext
+		}
 
-	articles = get_request(base_url, section_url, 'h3', 'homepageStoryCard__hed--92c78a74bbc694463e43e32aafbbdfd7')
+		all_articles_data.append(article_data)
 
-	# Full path for the MIT Review file
-	file_path = os.path.join(MIT_directory_path, 'MIT Review_' + date + '.csv')
-	
- 	# Write to csv file with UTF-8 encoding
-	with open(file_path, 'w', encoding='utf-8') as csvfile:
-		csvwriter = csv.writer(csvfile)
-		fields = ['Headline', 'Full Link', 'Date', 'Author', 'Content']
-		csvwriter.writerow(fields)
-  
-		for article_span in articles:				
-			csvwriter.writerow(get_article_data(article_span, base_url, 'div', "contentArticleHeader__publishDate--7eebb1699e639d6cdf75ced975c26010", 'a', "byline__name--0f13a06758d50e60b13981eba38e67b0 byline__storyPage--0ea6f2bef44ac9c70f6581d3d7f21b41", 'p'))
+	json_file_path = os.path.join(CNN_directory_path, 'CNN_' + date + '.json')
+	with open(json_file_path, 'w', encoding='utf-8') as jsonfile:
+		json.dump(all_articles_data, jsonfile, ensure_ascii=False, indent=4)
 				
 def crawlNewAtlas(date):
 	base_url = 'https://www.newatlas.com'
 	section_url = ''
 	
 	articles = get_request(base_url, section_url, 'a', 'Link')
- 
-	processed_links = []
-	
-	# Full path for the CNN file
-	file_path = os.path.join(NewAtlas_directory_path, 'New Atlas_' + date + '.csv')
- 
-	# Write to file with UTF-8 encoding
-	with open(file_path, 'w', encoding='utf-8') as csvfile:
-		csvwriter = csv.writer(csvfile)
-		fields = ['Headline', 'Full Link', 'Date', 'Author', 'Content']
-		csvwriter.writerow(fields)
-  
-		for article in articles:
-			article_data = []
-   
-			# Extract the href attribute
-			link = article.get('href')
-			if link:
-				# Check if the link is a full URL or a relative path
-				full_link = link if link.startswith('http') else base_url + link
+	all_articles_data = []
 
-				if full_link in processed_links:
-					continue
-				else:
+	for article in articles:
+		link = article.get('href')
+		if link:
+				
+				full_link = base_url + link if link.startswith('/') else link
+    
+		story = NewsPlease.from_url(full_link)
 
-					# Request the article page
-					try:
-						article_response = requests.get(full_link)
-						article_soup = BeautifulSoup(article_response.content, 'html.parser')
+		article_data = {
+			'title': story.title,
+			'url': story.url,
+			'date_publish': story.date_publish.isoformat() if story.date_publish else None,
+			'authors': story.authors,
+			'maintext': story.maintext
+		}
 
-						# Initialize variables
-						headline = 'No headline'
-						date = 'No date'
-						author = 'No author'
-						content = ''
+		all_articles_data.append(article_data)
 
-						# Try to extract headline, date, author, and content
-						headline_tag = article_soup.find('h1', class_='ArticlePage-headline')  
-						if headline_tag:
-							headline = headline_tag.get_text(strip=True)
-						else:
-							headline = 'No headline found'
-
-						date_element = article_soup.find('div', class_="ArticlePage-datePublished")
-						if date_element:
-							date = date_element.get_text(strip=True)
-
-						# Using regular expression to match the author profile URL pattern
-						author_elements = article_soup.find_all('a', href=re.compile(r'/author/'))
-						for author_element in author_elements:
-							# Extract author name from the text of the first matching element
-							author_name = author_element.get_text(strip=True)
-							if author_name:
-								author = author_name
-								break
-						else:
-							author = 'No author found'
-
-
-						content_elements = article_soup.find_all('p')
-						if content_elements:
-							content = ' '.join([p.get_text(strip=True) for p in content_elements])
-
-						if headline != 'No headline found':
-							
-							article_data.append(str(headline))
-							article_data.append(str(full_link))
-							article_data.append(str(date))
-							article_data.append(str(author))
-							article_data.append(str(content))
-							
-						else:
-							# Write only the headline if no link is found
-							article_data.append(str(headline))
-							
-						csvwriter.writerow(article_data)
-							
-	
-					except requests.exceptions.RequestException as e:
-						print(f"Error requesting {full_link}: {e}")
+	json_file_path = os.path.join(NewAtlas_directory_path, 'NewAtlas_' + date + '.json')
+	with open(json_file_path, 'w', encoding='utf-8') as jsonfile:
+		json.dump(all_articles_data, jsonfile, ensure_ascii=False, indent=4)
 
 def crawlTheVerge(date):
 	
@@ -212,58 +154,56 @@ def crawlTheVerge(date):
 	class2_articles = get_request(base_url, section_url, 'a', 'after:absolute after:inset-0 group-hover:shadow-underline-blurple dark:group-hover:shadow-underline-franklin')
 	articles = class1_articles + class2_articles
 
-	# Full path for the NYT file
-	file_path = os.path.join(TheVerge_directory_path, 'TheVerge_' + date + '.csv')
+	all_articles_data = []
 
-	# Write to csv file with UTF-8 encoding
-	with open(file_path, 'w', encoding='utf-8') as csvfile:
-		csvwriter = csv.writer(csvfile)
-		fields = ['Headline', 'Full Link', 'Date', 'Author', 'Content']
-		csvwriter.writerow(fields)
-  
-		for article_span in articles:
-			headline = article_span.get_text(strip=True)
-			article_data = []
+	for article in articles:
+		link = article.get('href')
+		if link:
+			full_link = base_url + link if link.startswith('/') else link
+    
+		story = NewsPlease.from_url(full_link)
 
-			# Extract the href attribute directly from the <a> tag
-			link = article_span.get('href')
+		article_data = {
+			'title': story.title,
+			'url': story.url,
+			'date_publish': story.date_publish.isoformat() if story.date_publish else None,
+			'authors': story.authors,
+			'maintext': story.maintext
+		}
 
-			if link:
-				
-				full_link = base_url + link if link.startswith('/') else link
+		all_articles_data.append(article_data)
 
-				# Request the article page
-				article_response = requests.get(full_link)
-				article_soup = BeautifulSoup(article_response.content, 'html.parser')
+	json_file_path = os.path.join(TheVerge_directory_path, 'TheVerge_' + date + '.json')
+	with open(json_file_path, 'w', encoding='utf-8') as jsonfile:
+		json.dump(all_articles_data, jsonfile, ensure_ascii=False, indent=4)
 
-				# Extract date, author, and content (selectors need to be adjusted)
-				date_element = article_soup.find('time', class_='duet--article--timestamp font-polysans text-12')
-				author_element = article_soup.find('span', class_='font-medium')
-				content_elements = article_soup.find_all('p')
+def crawlTechCrunch():
+	base_url = 'https://techcrunch.com/'
+	articles = get_request(base_url, '', 'a', 'post-block__title__link')
 
-				date = date_element.get_text(strip=True) if date_element else 'No date'
-				author_element = article_soup.find('a', class_='hover:shadow-underline-inherit')
-				if author_element:
-					author_text = author_element.get_text().strip()
-					# Check if the text starts with "By"
-					if author_text.startswith("By"):
-						author_text = author_text[2:]  # Remove "By"
-						author = author_text.split(',')[0].strip()
-					else:
-						author = author_text.split(',')[0].strip()
-				else:
-					author = 'No author'
-				content = ' '.join([p.get_text(strip=True) for p in content_elements])
+	all_articles_data = []
 
-				article_data.append(str(headline))
-				article_data.append(str(full_link))
-				article_data.append(str(date))
-				article_data.append(str(author))
-				article_data.append(str(content))
-				
-			else:
-				# Write only the headline if no link is found
-				article_data.append(str(headline))
-				
-			csvwriter.writerow(article_data)
+	for article in articles:
+		link = article.get('href')
+		story = NewsPlease.from_url(link)
 
+		article_data = {
+			'title': story.title,
+			'url': story.url,
+			'date_publish': story.date_publish.isoformat() if story.date_publish else None,
+			'authors': story.authors,
+			'maintext': story.maintext
+		}
+
+		all_articles_data.append(article_data)
+
+	json_file_path = os.path.join(TechCrunch_directory_path, 'TechCrunch_' + date + '.json')
+	with open(json_file_path, 'w', encoding='utf-8') as jsonfile:
+		json.dump(all_articles_data, jsonfile, ensure_ascii=False, indent=4)
+
+
+
+		
+
+	
+	
