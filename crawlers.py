@@ -1,38 +1,37 @@
 import requests
 from bs4 import BeautifulSoup
-import re
 import datetime
 import os
 from pathlib import Path
-import csv
 from newsplease import NewsPlease
 import json
 
 # This will automatically find the path to the Documents folder
 base_directory = Path.home() / "Documents"
 
-
-
 # Folders for each crawling function
 CNNTech = "CNN_Tech_Articles"
-WSJ = "WSJ"
 NewAtlas = "New_Atlas"
 TheVerge = "The_Verge"
 TechCrunch = "TechCrunch"
-
 
 today = datetime.date.today()
 date = today.strftime("%m/%d/%y").replace('/', '')
 
 # Full paths for each folder
 CNN_directory_path = base_directory / "NewsScrapes" / CNNTech
-WSJ_directory_path = base_directory / "NewsScrapes" / WSJ
 NewAtlas_directory_path = base_directory / "NewsScrapes" / NewAtlas
 TheVerge_directory_path = base_directory / "NewsScrapes" / TheVerge
 TechCrunch_directory_path = base_directory / "NewsScrapes" / TechCrunch
 
+# List of paths for easy iteration
+directory_paths = [CNN_directory_path, NewAtlas_directory_path, TheVerge_directory_path, TechCrunch_directory_path]
+
+# List of file name headers for easy iteration
+file_name_headers = ['CNN_', 'NewAtlas_', 'TheVerge_', 'TechCrunch_']
+
 # Create the directories if they do not exist
-for path in [CNN_directory_path, WSJ_directory_path, NewAtlas_directory_path, TheVerge_directory_path, TechCrunch_directory_path]:
+for path in directory_paths:
 	if not os.path.exists(path):
 		os.makedirs(path)
 
@@ -200,10 +199,3 @@ def crawlTechCrunch():
 	json_file_path = os.path.join(TechCrunch_directory_path, 'TechCrunch_' + date + '.json')
 	with open(json_file_path, 'w', encoding='utf-8') as jsonfile:
 		json.dump(all_articles_data, jsonfile, ensure_ascii=False, indent=4)
-
-
-
-		
-
-	
-	
