@@ -4,8 +4,6 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 import string
 
-
-
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 # Initialize the summarizer
@@ -24,19 +22,17 @@ def generate_hashtags(text, n_hashtags=2):
     hashtags = ['#' + word for word in tokens[:n_hashtags]]
     return ' '.join(hashtags)
 
-
 def generate_summaries():
-    # Process each json file
+    summaries = []
     for i in range(len(directory_paths)):
         json_file_path = os.path.join(directory_paths[i], file_name_headers[i] + date + '.json')
-        
         with open(json_file_path, encoding='utf-8') as f:
             data = json.load(f)
             if isinstance(data, list):
                 for item in data:
-                    if isinstance(item, dict) and 'maintext' in item:
-                        # Check and truncate the text if it's too long
+                    if isinstance(item, dict) and item.get('maintext'):
                         text = item['maintext'][:summarizer.tokenizer.model_max_length]
                         summary_text = summarizer(text, max_length=100, min_length=5, do_sample=False)[0]['summary_text']
                         hashtags = generate_hashtags(summary_text)
-                        print(summary_text + ' ' + hashtags)
+                        summaries.append([summary_text, hashtags, item['url']])
+    return summaries
