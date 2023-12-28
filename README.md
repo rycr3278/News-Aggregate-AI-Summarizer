@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project aims to create a web scraping tool that aggregates and organizes the top headlines in tech news from various reputable sources. The tool will not only list the headlines with corresponding hyperlinks but will also use AI to provide concise summaries of each article, offering a quick and efficient way to stay updated with the latest in technology.
+This project aims to create a web scraping tool that aggregates and organizes the top headlines in tech news from various reputable sources. The tool will not only list the headlines with corresponding hyperlinks but will also use AI to provide concise summaries of each article, offering a quick and efficient way to stay updated with the latest in technology. The main idea would be to create a automated newsletter that aggregates stories from across different news sources instead of recieving multiple newsletters from multiple sources. Summaries with hashtags and URLs will be optimized for easy copy/paste into social media posts. 
 
 ## Goals
 
@@ -20,12 +20,11 @@ This project aims to create a web scraping tool that aggregates and organizes th
 - **Real-time Updates**: Regularly update the news feed with the latest headlines.
 - **AI Summaries**: Short, accurate summaries for each article using AI.
 - **Search Functionality**: Allow users to search for specific news items or topics.
-- **Responsive Design**: Ensure the tool is accessible on various devices and screen sizes.
 
 ## Technology Stack
 
-- **Web Scraping**: Python (Beautiful Soup, Scrapy)
-- **AI Model for Summarization**: Natural Language Processing techniques, potentially leveraging models like GPT or BERT.
+- **Web Scraping**: Python (Beautiful Soup, news-please)
+- **AI Model for Summarization**: Natural Language Processing techniques, with Hugging Face (Transformers).
 - **Frontend**: HTML, CSS, JavaScript (React or Vue.js)
-- **Backend**: Python (Flask or Django)
-- **Database**: SQL or NoSQL database for storing links and summaries.
+- **Backend**: Python
+- **Database**: JSON
