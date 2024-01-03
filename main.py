@@ -2,6 +2,7 @@ from crawlers import *
 from model import *
 from uploader import *
 import csv
+import traceback
 
 def main():
     # Check file structure
@@ -20,7 +21,8 @@ def main():
     
     # Writing summaries to CSV
     try:
-        csv_file_path = base_directory / "NewsScrapes" / "Summaries" / "Summaries_" + date + ".csv"
+        csv_file_path = base_directory / "NewsScrapes" / "Summaries" / f"Summaries_{date}.csv"
+        
         with open(csv_file_path, mode='w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
             for summary in summaries:
@@ -34,6 +36,7 @@ def main():
         drive_uploader()
     except Exception as e:
         print(f"Error uploading to Google Drive: {e}")
+        traceback.print_exc()
 
 if __name__ == "__main__":
     main()

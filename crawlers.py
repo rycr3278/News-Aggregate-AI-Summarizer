@@ -45,7 +45,6 @@ def get_request(base_url, section_url, article_tag, identifier):
 
 	return articles
 
-def get_article_data(article_span, base_url, date_tag, date_identifier, author_tag, author_identifier, content_identifier):
 	headline = article_span.get_text(strip=True)
 	article_data = []
 

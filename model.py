@@ -1,4 +1,4 @@
-from transformers import pipeline, AutoModel
+from transformers import pipeline
 from crawlers import *
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
@@ -25,7 +25,14 @@ def generate_hashtags(text, n_hashtags=2):
 def generate_summaries():
     summaries = []
     for i in range(len(directory_paths)):
-        json_file_path = os.path.join(directory_paths[i], file_name_headers[i] + date + '.json')
+        # Convert the directory path to a pathlib.Path object
+        directory_path = Path(directory_paths[i])
+        
+        # Construct the filename
+        filename = f"{file_name_headers[i]}{date}.json"
+        
+        # Use the / operator to join the directory path and the filename
+        json_file_path = directory_path / filename
         with open(json_file_path, encoding='utf-8') as f:
             data = json.load(f)
             if isinstance(data, list):

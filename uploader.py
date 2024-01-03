@@ -11,7 +11,7 @@ def drive_uploader():
 	drive = GoogleDrive(gauth)
 
 	# Upload file
-	file_path = base_directory / "NewsScrapes" / "Summaries.csv"
+	file_path = base_directory / "NewsScrapes" / "Summaries" / f"Summaries_{date}.csv"
 	gfile = drive.CreateFile({'title': file_path.name})
 	gfile.SetContentFile(str(file_path))
 	gfile.Upload()
