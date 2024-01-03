@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project aims to create a web scraping tool that aggregates and organizes the top headlines in tech news from various reputable sources. The tool will not only list the headlines with corresponding hyperlinks but will also use AI to provide concise summaries of each article, offering a quick and efficient way to stay updated with the latest in technology. The main idea would be to create a automated newsletter that aggregates stories from across different news sources instead of recieving multiple newsletters from multiple sources. Summaries with hashtags and URLs will be optimized for easy copy/paste into social media posts. 
+This project aims to create a web scraping tool that aggregates and organizes the top headlines in tech news from various reputable sources. The tool will not only list the headlines with corresponding hyperlinks but will also use AI to provide concise summaries of each article, offering a quick and efficient way to stay updated with the latest in technology. The main idea would be to create an automated newsletter that aggregates stories from across different news sources instead of receiving multiple newsletters from multiple sources. Summaries with hashtags and URLs will be optimized for easy copy/paste into social media posts. 
 
 ## Goals
 
