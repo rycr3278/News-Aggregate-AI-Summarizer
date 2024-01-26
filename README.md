@@ -1,4 +1,4 @@
-# README.md for Web Scraper Project
+# README.md for News Aggregate AI Summarizer Project
 
 ## Overview
 
